@@ -1,0 +1,34 @@
+
+
+@apiUrl = http://localhost:8888/api
+@accessToken = {{signin.response.body.$.accessToken}}
+# @accessToken = {{signup.response.body.$.accessToken}}
+
+### Sign Up
+# @name signup
+POST {{apiUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "username": "ibqn",
+  "email": "ibqn@gmail.com",
+  "password": "rootme99"
+}
+
+### Sign In
+# @name signin
+POST {{apiUrl}}/auth/signin
+Content-Type: application/json
+
+{
+  "email": "ibqn@gmail.com",
+  "password": "rootme99"
+}
+
+### Get User
+GET {{apiUrl}}/auth/user
+Authorization: Bearer {{accessToken}}
+
+### Sign Out
+POST {{apiUrl}}/auth/signout
+Authorization: Bearer {{accessToken}}
