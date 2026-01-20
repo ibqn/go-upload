@@ -32,3 +32,55 @@ Authorization: Bearer {{accessToken}}
 ### Sign Out
 POST {{apiUrl}}/auth/signout
 Authorization: Bearer {{accessToken}}
+
+### Upload File (with inline content)
+POST {{apiUrl}}/upload/
+Authorization: Bearer {{accessToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+Hello, this is test file content!
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Upload File (from filesystem)
+POST {{apiUrl}}/upload/
+Authorization: Bearer {{accessToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="readme.md"
+Content-Type: text/plain
+
+< ./readme.md
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Upload File with Folder
+POST {{apiUrl}}/upload/
+Authorization: Bearer {{accessToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+Hello, this is test file content!
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="folder"
+
+documents
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### List Uploads
+GET {{apiUrl}}/upload/
+Authorization: Bearer {{accessToken}}
+
+### Get Upload
+GET {{apiUrl}}/upload/1
+Authorization: Bearer {{accessToken}}
+
+### Delete Upload
+DELETE {{apiUrl}}/upload/1
+Authorization: Bearer {{accessToken}}
