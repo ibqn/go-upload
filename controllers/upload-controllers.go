@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -19,12 +18,6 @@ func CreateUpload(c *gin.Context) {
 
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
-		return
-	}
-
-	var user models.User
-	if err := utils.DB.First(&user, userId).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
 
@@ -44,7 +37,7 @@ func CreateUpload(c *gin.Context) {
 
 	basePath := "file-storage"
 	cleanFolder := filepath.Clean(folder)
-	storagePath := filepath.Join(basePath, strconv.FormatUint(uint64(user.ID), 10), cleanFolder)
+	storagePath := filepath.Join(basePath, userId.(string), cleanFolder)
 
 	if err := os.MkdirAll(storagePath, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create directory"})
@@ -68,7 +61,7 @@ func CreateUpload(c *gin.Context) {
 	}
 
 	upload := models.Upload{
-		UserID:   user.ID,
+		UserID:   userId.(string),
 		FilePath: fullPath,
 	}
 
@@ -84,8 +77,77 @@ func CreateUpload(c *gin.Context) {
 
 }
 
-func ListUploads(c *gin.Context) {}
+func ListUploads(c *gin.Context) {
+	userId, exists := c.Get("userId")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
 
-func DeleteUpload(c *gin.Context) {}
+	var uploads []models.Upload
+	if err := utils.DB.Where("user_id = ?", userId).Find(&uploads).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve uploads"})
+		return
+	}
 
-func GetUpload(c *gin.Context) {}
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Uploads retrieved successfully",
+		"uploads": uploads})
+}
+
+func DeleteUpload(c *gin.Context) {
+	uploadId := c.Param("id")
+	userId, exists := c.Get("userId")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	var upload models.Upload
+	if err := utils.DB.First(&upload, uploadId).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Upload not found"})
+		return
+	}
+
+	if upload.UserID != userId.(string) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You do not have permission to delete this upload"})
+		return
+	}
+
+	if err := os.Remove(upload.FilePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete file from storage"})
+		return
+	}
+
+	if err := utils.DB.Delete(&upload).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not delete upload record"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Upload deleted successfully"})
+}
+
+func GetUpload(c *gin.Context) {
+	uploadId := c.Param("id")
+	userId, exists := c.Get("userId")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	var upload models.Upload
+	if err := utils.DB.First(&upload, uploadId).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Upload not found"})
+		return
+	}
+
+	if upload.UserID != userId.(string) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You do not have permission to access this upload"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Upload retrieved successfully",
+		"upload":  upload,
+	})
+}

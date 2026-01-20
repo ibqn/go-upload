@@ -51,10 +51,10 @@ Authorization: Bearer {{accessToken}}
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 
 ------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="file"; filename="readme.md"
-Content-Type: text/plain
+Content-Disposition: form-data; name="file"; filename="daniel-roe-lpjb_UMOyx8-unsplash.jpg"
+Content-Type: image/jpeg
 
-< ./readme.md
+< ./daniel-roe-lpjb_UMOyx8-unsplash.jpg
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
 
 ### Upload File with Folder
@@ -82,5 +82,5 @@ GET {{apiUrl}}/upload/1
 Authorization: Bearer {{accessToken}}
 
 ### Delete Upload
-DELETE {{apiUrl}}/upload/1
+DELETE {{apiUrl}}/upload/5
 Authorization: Bearer {{accessToken}}

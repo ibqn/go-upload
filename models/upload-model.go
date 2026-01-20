@@ -6,5 +6,5 @@ type Upload struct {
 	gorm.Model
 
 	FilePath string `gorm:"not null"`
-	UserID   uint   `gorm:"not null"`
+	UserID   string `gorm:"not null"`
 }
