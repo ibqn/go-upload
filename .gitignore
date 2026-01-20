@@ -1,3 +1,10 @@
 go-upload
 
 db.sqlite
+
+tmp
+
+file-storage/
+!file-storage/.gitkeep
+
+.DS_Store
