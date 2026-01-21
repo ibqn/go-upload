@@ -24,11 +24,5 @@ func SetupDb() {
 
 	DB.AutoMigrate(&models.User{}, &models.Upload{})
 
-	// Drop the file_name column if it exists
-	if DB.Migrator().HasColumn(&models.Upload{}, "file_name") {
-		DB.Migrator().DropColumn(&models.Upload{}, "file_name")
-		fmt.Println("Dropped file_name column from uploads table")
-	}
-
 	fmt.Println("Database connection established.")
 }

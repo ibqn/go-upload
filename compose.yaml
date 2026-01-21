@@ -1,0 +1,23 @@
+name: go-upload
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=drizzle
+      - POSTGRES_USER=drizzle
+      - POSTGRES_DB=go-upload
+
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+
+volumes:
+  dbdata:
