@@ -11,7 +11,6 @@ import (
 )
 
 func HandleGetFile(c *gin.Context) {
-
 	fileId := c.Param("id")
 
 	var upload models.Upload
