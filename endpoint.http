@@ -1,6 +1,9 @@
 
 
-@apiUrl = http://localhost:8888/api
+@baseUrl = http://localhost:8888
+@apiUrl = {{baseUrl}}/api
+@imageUrl = {{baseUrl}}/image
+@imageId = 6
 @accessToken = {{signin.response.body.$.accessToken}}
 # @accessToken = {{signup.response.body.$.accessToken}}
 
@@ -82,5 +85,20 @@ GET {{apiUrl}}/upload/1
 Authorization: Bearer {{accessToken}}
 
 ### Delete Upload
-DELETE {{apiUrl}}/upload/5
+DELETE {{apiUrl}}/upload/3
 Authorization: Bearer {{accessToken}}
+
+### Get Image (Original)
+GET {{imageUrl}}/{{imageId}}
+
+### Get Image (WebP Optimized)
+GET {{imageUrl}}/{{imageId}}?format=webp&q=30&w=200
+
+### Get Image (JPEG Quality)
+GET {{imageUrl}}/{{imageId}}?q=70
+
+### Get Image (Resize Only)
+GET {{imageUrl}}/{{imageId}}?w=400
+
+### Get Image (PNG Format)
+GET {{imageUrl}}/{{imageId}}?format=png&q=90&w=300
