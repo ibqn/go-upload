@@ -30,6 +30,14 @@ var supportedFormats = map[string]bimg.ImageType{
 	"avif": bimg.AVIF,
 }
 
+var formatToMime = map[string]string{
+	"webp": "image/webp",
+	"jpeg": "image/jpeg",
+	"jpg":  "image/jpeg",
+	"png":  "image/png",
+	"avif": "image/avif",
+}
+
 var mimeTypeMap = map[string]bimg.ImageType{
 	"image/jpeg": bimg.JPEG,
 	"image/png":  bimg.PNG,
@@ -73,7 +81,6 @@ func HandleGetImage(c *gin.Context) {
 
 	opts := parseImageParams(c)
 
-	// Debug logging
 	fmt.Printf("Image request - ID: %s, Width: %d, Quality: %d, Format: %s\n", fileId, opts.Width, opts.Quality, opts.Format)
 
 	var upload models.Upload
@@ -83,7 +90,7 @@ func HandleGetImage(c *gin.Context) {
 	}
 
 	mimeType := mime.TypeByExtension(filepath.Ext(upload.FilePath))
-	
+
 	if !strings.HasPrefix(mimeType, "image/") {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "File is not an image"})
 		return
@@ -105,11 +112,9 @@ func HandleGetImage(c *gin.Context) {
 }
 
 func processImageWithOptions(filePath string, opts ImageOptions, contentType string) ([]byte, string, error) {
-	// Debug logging
 	fmt.Printf("processImageWithOptions called - filePath: %s, width: %d, quality: %d, format: %s, contentType: %s\n",
 		filePath, opts.Width, opts.Quality, opts.Format, contentType)
 
-	// Read the image file
 	imageData, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to read file: %v", err)
@@ -142,16 +147,12 @@ func processImageWithOptions(filePath string, opts ImageOptions, contentType str
 	if opts.Format != "" && opts.Format != "original" {
 		if imageType, supported := supportedFormats[opts.Format]; supported {
 			options.Type = imageType
-			outputMimeType = fmt.Sprintf("image/%s", opts.Format)
-			if opts.Format == "jpg" {
-				outputMimeType = "image/jpeg"
-			}
+			outputMimeType = formatToMime[opts.Format]
 			fmt.Printf("Converting format to: %s (mime: %s)\n", opts.Format, outputMimeType)
 		} else {
 			return nil, "", fmt.Errorf("%w: %s", ErrUnsupportedFormat, opts.Format)
 		}
 	} else {
-		// Apply quality to original format
 		if imageType, exists := mimeTypeMap[contentType]; exists {
 			options.Type = imageType
 			fmt.Printf("Applying quality %d to existing format: %s\n", opts.Quality, contentType)
