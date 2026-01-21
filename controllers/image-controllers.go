@@ -19,11 +19,7 @@ import (
 var (
 	ErrUnsupportedFormat = errors.New("unsupported image format")
 	ErrInvalidParameters = errors.New("invalid parameters")
-)
-
-const (
-	DefaultQuality = 80
-	MaxQuality     = 100
+	ErrImageProcessing   = errors.New("image processing failed")
 )
 
 var supportedFormats = map[string]bimg.ImageType{
@@ -39,6 +35,11 @@ var mimeTypeMap = map[string]bimg.ImageType{
 	"image/png":  bimg.PNG,
 	"image/webp": bimg.WEBP,
 }
+
+const (
+	DefaultQuality = 80
+	MaxQuality     = 100
+)
 
 type ImageOptions struct {
 	Width   int
@@ -70,17 +71,10 @@ func parseImageParams(c *gin.Context) ImageOptions {
 func HandleGetImage(c *gin.Context) {
 	fileId := c.Param("id")
 
-	width := c.Query("w")       // ?w=100 -> width
-	quality := c.Query("q")     // ?q=80 -> quality
-	format := c.Query("format") // ?format=webp -> format
+	opts := parseImageParams(c)
 
 	// Debug logging
-	fmt.Printf("Image request - ID: %s, Width: %s, Quality: %s, Format: %s\n", fileId, width, quality, format)
-
-	// With default values
-	// width := c.DefaultQuery("w", "0")
-	// quality := c.DefaultQuery("q", "80")
-	// format := c.DefaultQuery("format", "original")
+	fmt.Printf("Image request - ID: %s, Width: %d, Quality: %d, Format: %s\n", fileId, opts.Width, opts.Quality, opts.Format)
 
 	var upload models.Upload
 	if err := utils.DB.Where("id = ?", fileId).First(&upload).Error; err != nil {
@@ -89,26 +83,20 @@ func HandleGetImage(c *gin.Context) {
 	}
 
 	mimeType := mime.TypeByExtension(filepath.Ext(upload.FilePath))
-	if mimeType == "" {
-		mimeType = "application/octet-stream"
-	}
-
+	
 	if !strings.HasPrefix(mimeType, "image/") {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "File is not an image"})
 		return
 	}
 
-	// Optimize image based on query parameters
-	optimizedImage, newMimeType, err := optimizeImage(upload.FilePath, width, quality, format, mimeType)
+	optimizedImage, newMimeType, err := processImageWithOptions(upload.FilePath, opts, mimeType)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process image"})
 		return
 	}
 
-	// Set content type header
 	c.Header("Content-Type", newMimeType)
 
-	// Set content disposition header with correct file extension
 	ext := getFileExtension(newMimeType)
 	filename := fmt.Sprintf("image_%s.%s", fileId, ext)
 	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=\"%s\"", filename))
@@ -116,9 +104,10 @@ func HandleGetImage(c *gin.Context) {
 	c.Data(http.StatusOK, newMimeType, optimizedImage)
 }
 
-func optimizeImage(filePath string, widthStr string, qualityStr string, format string, contentType string) ([]byte, string, error) {
+func processImageWithOptions(filePath string, opts ImageOptions, contentType string) ([]byte, string, error) {
 	// Debug logging
-	fmt.Printf("optimizeImage called - filePath: %s, widthStr: %s, qualityStr: %s, format: %s, contentType: %s\n", filePath, widthStr, qualityStr, format, contentType)
+	fmt.Printf("processImageWithOptions called - filePath: %s, width: %d, quality: %d, format: %s, contentType: %s\n",
+		filePath, opts.Width, opts.Quality, opts.Format, contentType)
 
 	// Read the image file
 	imageData, err := os.ReadFile(filePath)
@@ -127,82 +116,45 @@ func optimizeImage(filePath string, widthStr string, qualityStr string, format s
 	}
 	fmt.Printf("Image file read successfully, size: %d bytes\n", len(imageData))
 
-	// Parse width parameter
-	var width int
-	if widthStr != "" {
-		if w, err := strconv.Atoi(widthStr); err == nil && w > 0 {
-			width = w
-		}
-	}
-
-	// Parse quality parameter
-	quality := 80 // default quality
-	if qualityStr != "" {
-		if q, err := strconv.Atoi(qualityStr); err == nil && q > 0 && q <= 100 {
-			quality = q
-		}
-	}
-
-	fmt.Printf("Parsed parameters - width: %d, quality: %d\n", width, quality)
-
-	// Create bimg image
 	img := bimg.NewImage(imageData)
 	if img == nil {
-		return nil, "", fmt.Errorf("failed to create bimg image")
+		return nil, "", fmt.Errorf("%w: failed to create bimg image", ErrImageProcessing)
 	}
 
-	// Get original image size
 	size, err := img.Size()
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to get image size: %v", err)
+		return nil, "", fmt.Errorf("%w: failed to get image size: %v", ErrImageProcessing, err)
 	}
 	fmt.Printf("Original image size: %dx%d\n", size.Width, size.Height)
 
-	// Create bimg options
 	options := bimg.Options{
-		Quality: quality,
+		Quality: opts.Quality,
 	}
 
-	// Apply resize if width is provided
-	if width > 0 {
-		options.Width = width
-		options.Enlarge = false // equivalent to withoutEnlargement: true
-		options.Force = false   // equivalent to fit: "inside"
-		fmt.Printf("Resizing to width: %d\n", width)
+	if opts.Width > 0 {
+		options.Width = opts.Width
+		options.Enlarge = false
+		options.Force = false
+		fmt.Printf("Resizing to width: %d\n", opts.Width)
 	}
 
-	// Handle format conversion
 	outputMimeType := contentType
-	if format != "" {
-		supportedFormats := map[string]bimg.ImageType{
-			"webp": bimg.WEBP,
-			"jpeg": bimg.JPEG,
-			"jpg":  bimg.JPEG,
-			"png":  bimg.PNG,
-			"avif": bimg.AVIF,
-		}
-
-		if imageType, supported := supportedFormats[format]; supported {
+	if opts.Format != "" && opts.Format != "original" {
+		if imageType, supported := supportedFormats[opts.Format]; supported {
 			options.Type = imageType
-			outputMimeType = fmt.Sprintf("image/%s", format)
-			if format == "jpg" {
+			outputMimeType = fmt.Sprintf("image/%s", opts.Format)
+			if opts.Format == "jpg" {
 				outputMimeType = "image/jpeg"
 			}
-			fmt.Printf("Converting format to: %s (mime: %s)\n", format, outputMimeType)
+			fmt.Printf("Converting format to: %s (mime: %s)\n", opts.Format, outputMimeType)
 		} else {
-			return nil, "", fmt.Errorf("unsupported format: %s", format)
+			return nil, "", fmt.Errorf("%w: %s", ErrUnsupportedFormat, opts.Format)
 		}
-	} else if qualityStr != "" && contentType != "" {
-		// Apply quality to existing format
-		formatMap := map[string]bimg.ImageType{
-			"image/jpeg": bimg.JPEG,
-			"image/png":  bimg.PNG,
-			"image/webp": bimg.WEBP,
-		}
-
-		if imageType, exists := formatMap[contentType]; exists {
+	} else {
+		// Apply quality to original format
+		if imageType, exists := mimeTypeMap[contentType]; exists {
 			options.Type = imageType
-			fmt.Printf("Applying quality %d to existing format: %s\n", quality, contentType)
+			fmt.Printf("Applying quality %d to existing format: %s\n", opts.Quality, contentType)
 		}
 	}
 
@@ -210,11 +162,11 @@ func optimizeImage(filePath string, widthStr string, qualityStr string, format s
 
 	processedImage, err := img.Process(options)
 	if err != nil {
-		return nil, "", fmt.Errorf("bimg processing failed: %v", err)
+		return nil, "", fmt.Errorf("%w: bimg processing failed: %v", ErrImageProcessing, err)
 	}
 
 	if len(processedImage) == 0 {
-		return nil, "", fmt.Errorf("processed image is empty")
+		return nil, "", fmt.Errorf("%w: processed image is empty", ErrImageProcessing)
 	}
 
 	fmt.Printf("Processing completed successfully, output size: %d bytes\n", len(processedImage))
