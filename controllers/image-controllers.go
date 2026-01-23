@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/h2non/bimg"
 )
 
@@ -83,8 +84,14 @@ func HandleGetImage(c *gin.Context) {
 
 	fmt.Printf("Image request - ID: %s, Width: %d, Quality: %d, Format: %s\n", fileId, opts.Width, opts.Quality, opts.Format)
 
+	fileUUID, err := uuid.Parse(fileId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file id"})
+		return
+	}
+
 	var upload models.Upload
-	if err := utils.DB.Where("id = ?", fileId).First(&upload).Error; err != nil {
+	if err := utils.DB.Where("id = ?", fileUUID).First(&upload).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
 		return
 	}
@@ -105,7 +112,7 @@ func HandleGetImage(c *gin.Context) {
 	c.Header("Content-Type", newMimeType)
 
 	ext := getFileExtension(newMimeType)
-	filename := fmt.Sprintf("image_%s.%s", fileId, ext)
+	filename := fmt.Sprintf("image_%s.%s", fileUUID.String(), ext)
 	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=\"%s\"", filename))
 
 	c.Data(http.StatusOK, newMimeType, optimizedImage)

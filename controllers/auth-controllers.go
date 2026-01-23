@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -122,8 +123,14 @@ func GetUser(c *gin.Context) {
 		return
 	}
 
+	userUUID, err := uuid.Parse(userId.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
 	var user models.User
-	if err := utils.DB.First(&user, userId).Error; err != nil {
+	if err := utils.DB.Where("id = ?", userUUID).First(&user).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}

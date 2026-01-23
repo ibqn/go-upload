@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/rs/xid"
 )
 
@@ -18,6 +19,12 @@ func CreateUpload(c *gin.Context) {
 
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	userUUID, err := uuid.Parse(userId.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
@@ -37,7 +44,7 @@ func CreateUpload(c *gin.Context) {
 
 	basePath := "file-storage"
 	cleanFolder := filepath.Clean(folder)
-	storagePath := filepath.Join(basePath, userId.(string), cleanFolder)
+	storagePath := filepath.Join(basePath, userUUID.String(), cleanFolder)
 
 	if err := os.MkdirAll(storagePath, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create directory"})
@@ -61,7 +68,7 @@ func CreateUpload(c *gin.Context) {
 	}
 
 	upload := models.Upload{
-		UserID:   userId.(string),
+		UserID:   userUUID,
 		FilePath: fullPath,
 	}
 
@@ -84,8 +91,14 @@ func ListUploads(c *gin.Context) {
 		return
 	}
 
+	userUUID, err := uuid.Parse(userId.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
 	var uploads []models.Upload
-	if err := utils.DB.Where("user_id = ?", userId).Find(&uploads).Error; err != nil {
+	if err := utils.DB.Where("user_id = ?", userUUID).Find(&uploads).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve uploads"})
 		return
 	}
@@ -103,13 +116,25 @@ func DeleteUpload(c *gin.Context) {
 		return
 	}
 
+	userUUID, err := uuid.Parse(userId.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	uploadUUID, err := uuid.Parse(uploadId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid upload id"})
+		return
+	}
+
 	var upload models.Upload
-	if err := utils.DB.First(&upload, uploadId).Error; err != nil {
+	if err := utils.DB.Where("id = ?", uploadUUID).First(&upload).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Upload not found"})
 		return
 	}
 
-	if upload.UserID != userId.(string) {
+	if upload.UserID != userUUID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You do not have permission to delete this upload"})
 		return
 	}
@@ -135,13 +160,25 @@ func GetUpload(c *gin.Context) {
 		return
 	}
 
+	userUUID, err := uuid.Parse(userId.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	uploadUUID, err := uuid.Parse(uploadId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid upload id"})
+		return
+	}
+
 	var upload models.Upload
-	if err := utils.DB.First(&upload, uploadId).Error; err != nil {
+	if err := utils.DB.Where("id = ?", uploadUUID).First(&upload).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Upload not found"})
 		return
 	}
 
-	if upload.UserID != userId.(string) {
+	if upload.UserID != userUUID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You do not have permission to access this upload"})
 		return
 	}
