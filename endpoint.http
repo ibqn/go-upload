@@ -3,7 +3,7 @@
 @baseUrl = http://localhost:8888
 @apiUrl = {{baseUrl}}/api
 @imageUrl = {{baseUrl}}/image
-@imageId = 6
+@imageId = "762a2db9-2aee-4a8d-90e1-65e04ba795c0"
 @accessToken = {{signin.response.body.$.accessToken}}
 # @accessToken = {{signup.response.body.$.accessToken}}
 
@@ -54,10 +54,10 @@ Authorization: Bearer {{accessToken}}
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 
 ------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="file"; filename="daniel-roe-lpjb_UMOyx8-unsplash.jpg"
+Content-Disposition: form-data; name="file"; filename="image.jpg"
 Content-Type: image/jpeg
 
-< ./daniel-roe-lpjb_UMOyx8-unsplash.jpg
+< ./image.jpg
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
 
 ### Upload File with Folder
