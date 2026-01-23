@@ -2,7 +2,6 @@ package utils
 
 import (
 	"go-upload/models"
-	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -17,7 +16,7 @@ type Claims struct {
 
 func GenerateToken(user models.User) (string, error) {
 	claims := &Claims{
-		UserId: strconv.FormatUint(uint64(user.ID), 10),
+		UserId: user.ID.String(),
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * 7 * time.Hour)),
 		},
