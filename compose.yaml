@@ -12,12 +12,21 @@ services:
       - POSTGRES_PASSWORD=drizzle
       - POSTGRES_USER=drizzle
       - POSTGRES_DB=go-upload
+    networks:
+      - go-upload-network
 
   adminer:
     image: adminer
     restart: unless-stopped
     ports:
       - "8080:8080"
+    networks:
+      - go-upload-network
 
 volumes:
   dbdata:
+
+networks:
+  go-upload-network:
+    name: go-upload-network
+    driver: bridge
