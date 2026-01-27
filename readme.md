@@ -250,7 +250,7 @@ docker compose -f compose.yaml up -d
 
 2. **Start the Go application**
 ```bash
-docker compose -f compose.go.yaml up -d
+docker compose -f compose.yaml -f compose.go.yaml up -d
 ```
 
 ## 🧪 Testing
