@@ -14,7 +14,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=1 go build -o go-upload .
+RUN CGO_ENABLED=1 GOOS=linux go build -o api ./cmd/api
 
 FROM alpine:latest
 
@@ -24,10 +24,10 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-COPY --from=builder /app/go-upload .
+COPY --from=builder /app/api .
 
 RUN mkdir -p /app/file-storage
 
-EXPOSE 8000
+EXPOSE 8888
 
-CMD ["./go-upload"]
+CMD ["./api"]

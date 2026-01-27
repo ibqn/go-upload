@@ -1,12 +1,46 @@
+# Binaries
 go-upload
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
 
+# Test and coverage
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Database
 db.sqlite
 
-tmp
+# Build and temp directories
+tmp/
+bin/
 
+# Test files
 image.jpg
 
+# Uploaded files
 file-storage/
 !file-storage/.gitkeep
 
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Air temp files
+build-errors.log
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
