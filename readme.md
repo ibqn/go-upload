@@ -62,10 +62,12 @@ This project follows **Clean Architecture** principles with clear separation of 
 ### Layer Responsibilities
 
 - **HTTP Layer (Handlers)**: Handle HTTP requests/responses, parse inputs, format outputs
-- **Service Interfaces**: Define contracts between layers (Dependency Inversion)
-- **Business Logic (Services)**: Implement business rules, orchestrate operations
-- **Repository Interfaces**: Define data access contracts
-- **Data Access (Repositories)**: Implement database operations with GORM
+- **Service Interfaces**: Abstract contracts defining service methods (e.g., `type AuthService interface`)
+- **Business Logic (Services)**: Concrete implementations of service interfaces with actual business logic
+- **Repository Interfaces**: Abstract contracts defining data access methods
+- **Data Access (Repositories)**: Concrete GORM implementations of repository interfaces
+
+**Note**: Interfaces and implementations are separated for Dependency Inversion - handlers depend on service interfaces (not concrete types), and services depend on repository interfaces (not concrete implementations). This makes the code testable and allows swapping implementations.
 
 ## 📁 Project Structure
 
@@ -139,7 +141,7 @@ go-upload/
 - ✅ **JWT Authentication** - Secure token-based auth
 - ✅ **File Upload** - With folder organization and conflict resolution
 - ✅ **Image Processing** - Resize, quality adjustment, format conversion (WEBP, JPEG, PNG, AVIF)
-- ✅ **UUID Primary Keys** - Using PostgreSQL's `gen_random_uuid()`
+- ✅ **UUID Primary Keys** - Generated in Go with BeforeCreate hooks (PostgreSQL + SQLite compatible)
 - ✅ **Soft Deletes** - Audit trail with GORM
 - ✅ **Restrictive DTOs** - No password exposure, only essential fields
 - ✅ **Comprehensive Tests** - Repository, service, and integration tests
@@ -176,24 +178,20 @@ GET    /image/:id           - Get optimized image
 
 ### Prerequisites
 
-- Go 1.21+
-- PostgreSQL 14+
+- Go 1.25+
+- PostgreSQL 18+
 - libvips (for image processing)
 
 ### Installation
 
-1. **Clone the repository**
-```bash
-git clone <repository-url>
-cd go-upload
-```
 
-2. **Install dependencies**
+
+1. **Install dependencies**
 ```bash
 go mod download
 ```
 
-3. **Install libvips** (for image processing)
+2. **Install libvips** (for image processing)
 ```bash
 # macOS
 brew install vips
@@ -205,7 +203,7 @@ sudo apt-get install libvips-dev
 apk add vips-dev
 ```
 
-4. **Set up environment variables**
+3. **Set up environment variables**
 ```bash
 cp .env.example .env
 # Edit .env with your configuration
@@ -219,7 +217,7 @@ JWT_SECRET="your_secure_jwt_secret_key_change_in_production"
 STORAGE_PATH="file-storage"
 ```
 
-5. **Run database migrations**
+4. **Run database migrations**
 ```bash
 # Migrations run automatically on startup
 # Tables: users, uploads
