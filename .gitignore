@@ -3,6 +3,7 @@ go-upload
 db.sqlite
 
 tmp
+bin
 
 image.jpg
 
